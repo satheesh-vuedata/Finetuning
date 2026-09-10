@@ -171,6 +171,31 @@
   .peft-status{min-height:32px;margin-top:14px;padding:9px 10px;border-radius:8px;background:#f4f6fb;color:#68748a;font-size:11px;line-height:1.4}
   .peft-button{width:100%;margin-top:10px}
   @media(max-width:850px){.peft-layout{grid-template-columns:1fr}}
+  .setup-card{padding:22px;margin-top:18px}
+  .setup-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:18px}
+  .setup-head h2{margin:0 0 5px;font-size:24px}
+  .setup-head p{margin:0;color:#718099;font-size:13px}
+  .setup-badge{background:#c97816;color:white;border-radius:20px;padding:9px 30px;font-size:11px;font-weight:800;letter-spacing:.8px;white-space:nowrap}
+  .setup-table-wrap{overflow-x:auto;border:1px solid #e1e6ef}
+  .setup-table{width:100%;min-width:720px;border-collapse:collapse;font-size:11px}
+  .setup-table th{padding:12px 9px;text-align:left;background:#c97816;color:white;font-size:11px}
+  .setup-table th:first-child{width:17%}.setup-table th:nth-child(2){width:43%}.setup-table th:nth-child(3){width:40%}
+  .setup-table td{padding:12px 9px;border-top:1px solid #dce2eb;color:#344056;line-height:1.45;vertical-align:top}
+  .setup-table tbody tr:nth-child(odd){background:#f0f3f7}.setup-table tbody tr:nth-child(even){background:#fff}
+  .setup-table td:first-child{font-weight:800;color:#1f2b43}
+  @media(max-width:650px){.setup-card{padding:16px}.setup-head h2{font-size:20px}.setup-head{display:block}.setup-badge{display:inline-block;margin-top:12px}}
+  .params-card{padding:22px;margin-top:18px}
+  .params-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:18px}
+  .params-head h2{margin:0 0 5px;font-size:24px}
+  .params-head p{margin:0;color:#718099;font-size:13px}
+  .params-table-wrap{overflow-x:auto;border:1px solid #e1e6ef}
+  .params-table{width:100%;min-width:760px;border-collapse:collapse;font-size:11px}
+  .params-table th{padding:11px 8px;text-align:left;background:#c97816;color:white;font-size:11px}
+  .params-table th:first-child{width:20%}.params-table th:nth-child(2){width:14%}.params-table th:nth-child(3){width:66%}
+  .params-table td{padding:9px 8px;border-top:1px solid #dce2eb;color:#344056;line-height:1.4;vertical-align:top}
+  .params-table tbody tr:nth-child(odd){background:#f0f3f7}.params-table tbody tr:nth-child(even){background:#fff}
+  .params-table td:first-child{font-weight:800;color:#1f2b43}.params-value{font-weight:800;color:#c16f14}
+  @media(max-width:650px){.params-card{padding:16px}.params-head h2{font-size:20px}.params-head{display:block}}
 </style>
 </head>
 <body>
@@ -292,6 +317,57 @@
           </div>
         </div>
       </div>
+      <div class="card setup-card">
+        <div class="setup-head">
+          <div>
+            <h2>Setup for Fine-Tuning</h2>
+            <p>Hardware, stack, and the order things need to happen in.</p>
+          </div>
+          <div class="setup-badge">TRAINING</div>
+        </div>
+        <div class="setup-table-wrap">
+          <table class="setup-table">
+            <thead><tr><th>Step</th><th>What you do</th><th>What to watch</th></tr></thead>
+            <tbody>
+              <tr><td>1 · Pick the base</td><td>Choose a base or instruction-tuned checkpoint. Use a base for continued pretraining and an instruction-tuned model for SFT or Q&amp;A.</td><td>Do not mix them up: a base checkpoint has no chat template.</td></tr>
+              <tr><td>2 · Provision the GPU</td><td>A LoRA run on a large model needs substantially less memory than full fine-tuning. Leave headroom for activations, gradients, and sequence length.</td><td>Budget for the actual model, batch size, context length, and optimizer state rather than weights alone.</td></tr>
+              <tr><td>3 · Install the stack</td><td>Install Transformers with PEFT and TRL, plus bitsandbytes for 4-bit loading and an accelerator for the launcher.</td><td>Pin versions. Adapter formats and trainer APIs can change between releases.</td></tr>
+              <tr><td>4 · Format the dataset</td><td>Prepare JSONL in the chat or completion schema, then split it into train, validation, and held-out test sets.</td><td>Split before augmentation or preprocessing that could leak examples across sets.</td></tr>
+              <tr><td>5 · Apply the chat template</td><td>Tokenize with the model’s own template so the training format matches the format used during serving.</td><td>A template mismatch can produce a model that trains cleanly but behaves oddly in production.</td></tr>
+              <tr><td>6 · Configure and run</td><td>Set LoRA and training parameters, log loss on train and validation data, and save checkpoints regularly.</td><td>Watch for the validation curve turning up; that is where overfitting may be starting.</td></tr>
+              <tr><td>7 · Evaluate and gate</td><td>Score the held-out set and compare against the current model before promoting the adapter.</td><td>Discard runs that do not beat the incumbent. Training is only useful when the result improves the task.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card params-card">
+        <div class="params-head">
+          <div>
+            <h2>Fine-Tuning Parameters</h2>
+            <p>The configuration used, why each value matters, and what each setting controls.</p>
+          </div>
+          <div class="setup-badge">TRAINING</div>
+        </div>
+        <div class="params-table-wrap">
+          <table class="params-table">
+            <thead><tr><th>Parameter</th><th>Value</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td>LoRA rank (r)</td><td class="params-value" id="paramRank">16</td><td>Controls adapter capacity. A larger rank can learn more, but adds trainable parameters and memory.</td></tr>
+              <tr><td>LoRA alpha</td><td class="params-value">16</td><td>Scales the LoRA update before it is added to the base model.</td></tr>
+              <tr><td>LoRA dropout</td><td class="params-value">0.0</td><td>Randomly drops part of the adapter during training; more dropout adds regularization.</td></tr>
+              <tr><td>Batch size</td><td class="params-value">20</td><td>Number of training examples processed together. Larger batches need more VRAM.</td></tr>
+              <tr><td>Learning rate</td><td class="params-value">5e-5</td><td>Controls how large each optimizer update is. Too high can destabilize training.</td></tr>
+              <tr><td>Weight decay</td><td class="params-value">0.01</td><td>Regularizes weights to reduce overfitting and overly large updates.</td></tr>
+              <tr><td>LR scheduler</td><td class="params-value">Cosine</td><td>Gradually changes the learning rate through the training run.</td></tr>
+              <tr><td>Epochs</td><td class="params-value">2</td><td>Number of passes over the dataset. More passes can improve learning but increase overfitting risk.</td></tr>
+              <tr><td>Optimizer</td><td class="params-value">adamw_8bit</td><td>Updates trainable parameters while using a memory-efficient 8-bit optimizer state.</td></tr>
+              <tr><td>Attention LoRA</td><td class="params-value">Yes</td><td>Applies LoRA to attention layers so the model can adapt its input relationships.</td></tr>
+              <tr><td>Language layers</td><td class="params-value">Yes</td><td>Applies LoRA to language-model layers so the output behavior can adapt.</td></tr>
+              <tr><td>Precision</td><td class="params-value" id="paramPrecision">4-bit / FP16 compute</td><td>Stores the base model in the selected low-bit format while computation uses a higher-precision type.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div class="card neural-card">
         <div class="neural-head">
           <div>
@@ -407,6 +483,8 @@ const quantCaption = document.getElementById('quantCaption');
 const tuneStageTitle = document.getElementById('tuneStageTitle');
 const tuneStageText = document.getElementById('tuneStageText');
 const quantResult = document.getElementById('quantResult');
+const paramRank = document.getElementById('paramRank');
+const paramPrecision = document.getElementById('paramPrecision');
 const peftStatus = document.getElementById('peftStatus');
 const peftButton = document.getElementById('peftBtn');
 const peftNodes = [...document.querySelectorAll('.path-node')];
@@ -446,6 +524,8 @@ function update(){
   document.getElementById('mQLoRA').textContent=total.toFixed(2)+' GB';
   document.getElementById('mTrain').textContent=trainPct.toFixed(2)+'%';
   document.getElementById('mSave').textContent=save.toFixed(0)+'%';
+  paramRank.textContent=r;
+  paramPrecision.textContent=mode==='full'?'FP16 / full weights':bits+'-bit / FP16 compute';
   updateQuantization();
   renderLayers();
 }
