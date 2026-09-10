@@ -8,7 +8,7 @@
   *{box-sizing:border-box}
   body{
     margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;
-    background:#f5f7fb;color:#14213d;min-height:100vh;
+    background:#f5f7fb;color:#14213d;min-height:100vh;overflow-x:hidden;
   }
   .app{max-width:1400px;margin:auto;padding:28px}
   .top{
@@ -18,7 +18,8 @@
   h1{font-size:38px;margin:0 0 6px;font-weight:800;letter-spacing:-1px}
   .subtitle{font-size:16px;color:#667085;max-width:760px;line-height:1.5}
   .badge{background:#5264b7;color:white;padding:10px 18px;border-radius:22px;font-weight:700;font-size:13px}
-  .layout{display:grid;grid-template-columns:1fr 330px;gap:20px}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+  .main-column{min-width:0}
   .card{
     background:white;border:1px solid #e4e8f0;border-radius:18px;
     box-shadow:0 8px 28px rgba(24,39,75,.06)
@@ -61,7 +62,7 @@
     text-align:center;margin-top:20px;font-size:13px;color:#667085
   }
   .quant-note strong{color:#3e4fa0}
-  .controls{padding:20px}
+  .controls{padding:20px;position:sticky;top:20px}
   .controls h2{margin:0 0 16px;font-size:19px}
   .control{margin-bottom:19px}
   .control-line{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:7px}
@@ -92,8 +93,8 @@
   .progress{height:8px;background:#e8ebf2;border-radius:8px;overflow:hidden;margin-top:10px}
   .bar{height:100%;width:0;background:#5264b7;transition:.2s}
   .train-status{font-size:12px;color:#59657a;margin-top:8px;min-height:17px}
-  @media(max-width:1000px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}}
-  @media(max-width:650px){.model-row{gap:7px}.model{width:140px}.adapter{width:110px}.arrow{font-size:22px}.metrics{grid-template-columns:1fr}}
+  @media(max-width:1000px){.layout{grid-template-columns:1fr}.controls{position:static}.metrics{grid-template-columns:1fr 1fr}}
+  @media(max-width:650px){.app{padding:18px 14px}.top{display:block}.badge{display:inline-block;margin-top:14px}.model-row{gap:7px;min-width:470px}.model{width:140px}.adapter{width:110px}.arrow{font-size:22px}.metrics{grid-template-columns:1fr}.flow{padding:14px;overflow-x:auto}.neural-head{display:block}.neural-head .status{display:inline-block;margin-top:10px}.neural-flow{grid-template-columns:1fr;gap:10px}.nf-arrow{transform:rotate(90deg)}}
 
   .neural-card{padding:20px;margin-top:18px}
   .neural-head{display:flex;justify-content:space-between;align-items:center;gap:15px}
@@ -122,6 +123,35 @@
   .hood-grid b{display:block;font-size:12px;margin-bottom:5px}
   .hood-grid span{font-size:11px;line-height:1.45;color:#677287}
   .neural-btn{margin-top:14px}
+  .detail-card{padding:22px;margin-top:18px}
+  .detail-card h2{margin:0 0 6px;font-size:20px}
+  .detail-intro{margin:0;color:#68748a;font-size:13px;line-height:1.55}
+  .detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .detail-step{padding:14px;background:#fbfcff;border:1px solid #e7eaf2;border-radius:12px;min-height:150px}
+  .step-number{display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:8px;background:#5264b7;color:white;font-size:12px;font-weight:800}
+  .detail-step h3{font-size:13px;margin:12px 0 6px}
+  .detail-step p{font-size:11px;line-height:1.5;color:#68748a;margin:0}
+  .comparison{margin-top:16px;border-top:1px solid #e7eaf2;padding-top:15px}
+  .comparison-title{font-size:12px;font-weight:800;margin-bottom:9px}
+  .comparison-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:11px;color:#68748a}
+  .comparison-row strong{display:block;color:#273554;margin-bottom:3px}
+  @media(max-width:1000px){.detail-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:650px){.detail-grid,.comparison-row{grid-template-columns:1fr}}
+  .quant-card{padding:22px;margin-top:18px;background:#fffdf9;border-color:#eee2c8}
+  .quant-card h2{margin:0 0 5px;font-size:20px}
+  .quant-intro{margin:0;color:#68748a;font-size:13px;line-height:1.55}
+  .quant-flow{display:grid;grid-template-columns:1fr 34px 1fr 34px 1fr;align-items:center;gap:8px;margin-top:18px}
+  .quant-stage{padding:15px;min-height:175px;border-radius:13px;background:#fff;border:1px solid #eadfca}
+  .quant-stage h3{font-size:13px;margin:0 0 8px}
+  .quant-stage p{font-size:11px;line-height:1.45;color:#68748a;margin:0 0 12px}
+  .weight-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+  .weight{height:19px;border-radius:4px;background:#7889df}
+  .weight.quant{background:#e8b95f}
+  .weight.adapter{background:#62bd8d;border:0;min-height:0;width:auto;padding:0}
+  .quant-caption{font-size:10px;color:#8b7650;margin-top:10px}
+  .quant-arrow{font-size:25px;text-align:center;color:#a89169;font-weight:800}
+  .quant-result{margin-top:15px;padding:12px 14px;border-radius:10px;background:#fff7e3;border:1px solid #f0d898;font-size:12px;line-height:1.5;color:#765c26}
+  @media(max-width:650px){.quant-flow{grid-template-columns:1fr;gap:5px}.quant-arrow{transform:rotate(90deg)}}
 </style>
 </head>
 <body>
@@ -138,7 +168,7 @@
   </div>
 
   <div class="layout">
-    <div>
+    <div class="main-column">
       <div class="card stage">
         <div class="stage-head">
           <h2 id="stageTitle">Step 1 — Start with the Base Model</h2>
@@ -190,8 +220,33 @@
           <span id="lessonText">The base model contains the original knowledge. During a forward pass, neurons still activate and produce hidden representations; QLoRA simply avoids updating the frozen base weights.</span>
         </div>
       </div>
-    </div>
-
+      <div class="card quant-card">
+        <h2>What is quantization?</h2>
+        <p class="quant-intro">Quantization stores each model weight with fewer numerical values. It reduces memory, but very low bit widths can slightly reduce precision. In QLoRA, the quantized base is used for the forward pass while the adapter learns the task.</p>
+        <div class="quant-flow">
+          <div class="quant-stage">
+            <h3>1. Original weights</h3>
+            <p>FP16 keeps more detail in every weight, but uses more memory.</p>
+            <div class="weight-grid" aria-label="Full precision weights"><i class="weight"></i><i class="weight"></i><i class="weight"></i><i class="weight"></i><i class="weight"></i><i class="weight"></i><i class="weight"></i><i class="weight"></i></div>
+            <div class="quant-caption">16 bits per weight</div>
+          </div>
+          <div class="quant-arrow">→</div>
+          <div class="quant-stage">
+            <h3 id="quantStageTitle">2. 4-bit representation</h3>
+            <p id="quantStageText">Values are mapped to a smaller set of numbers and kept in the frozen base model.</p>
+            <div class="weight-grid" aria-label="Quantized weights"><i class="weight quant"></i><i class="weight quant"></i><i class="weight quant"></i><i class="weight quant"></i><i class="weight quant"></i><i class="weight quant"></i><i class="weight quant"></i><i class="weight quant"></i></div>
+            <div class="quant-caption" id="quantCaption">4 bits per weight</div>
+          </div>
+          <div class="quant-arrow">+</div>
+          <div class="quant-stage">
+            <h3 id="tuneStageTitle">3. Fine-tune safely</h3>
+            <p id="tuneStageText">The base stays frozen. Gradients update only the small green LoRA adapter.</p>
+            <div class="weight-grid" aria-label="Trainable adapter"><i class="weight adapter"></i><i class="weight adapter"></i><i class="weight adapter"></i><i class="weight adapter"></i><i class="weight adapter"></i><i class="weight adapter"></i><i class="weight adapter"></i><i class="weight adapter"></i></div>
+            <div class="quant-caption">Trainable task update</div>
+          </div>
+        </div>
+        <div class="quant-result" id="quantResult"><b>What happens after training?</b> The original knowledge remains in the quantized base. The adapter adds the new task behavior and can be saved or swapped independently.</div>
+      </div>
       <div class="card neural-card">
         <div class="neural-head">
           <div>
@@ -228,6 +283,26 @@
         </div>
         <button class="primary neural-btn" id="forwardBtn">⚡ Run Forward Pass</button>
       </div>
+
+      <div class="card detail-card">
+        <h2>QLoRA in four moves</h2>
+        <p class="detail-intro">The simulation separates the two ideas that make QLoRA efficient: shrinking the stored base model and limiting which parameters the optimizer can change.</p>
+        <div class="detail-grid">
+          <div class="detail-step"><span class="step-number">1</span><h3>Start with knowledge</h3><p>A pretrained model already contains broad language patterns and task knowledge in its base weights.</p></div>
+          <div class="detail-step"><span class="step-number">2</span><h3>Compress the base</h3><p>Quantization stores weights with fewer bits. The forward pass still uses the base model, but it needs less memory.</p></div>
+          <div class="detail-step"><span class="step-number">3</span><h3>Add a low-rank path</h3><p>LoRA represents the task-specific update as two small matrices. Rank controls the adapter capacity.</p></div>
+          <div class="detail-step"><span class="step-number">4</span><h3>Update only the adapter</h3><p>Backpropagation computes gradients, while the optimizer changes the adapter and leaves the base weights frozen.</p></div>
+        </div>
+        <div class="comparison">
+          <div class="comparison-title">What the controls change</div>
+          <div class="comparison-row">
+            <div><strong>Model size</strong>Changes the approximate memory footprint.</div>
+            <div><strong>Quantization</strong>Trades numerical precision for lower storage.</div>
+            <div><strong>LoRA rank</strong>Trades adapter capacity for more trainable parameters.</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="card controls">
       <h2>🎛️ Control the Simulation</h2>
@@ -281,6 +356,12 @@ const lessonText = document.getElementById('lessonText');
 const trainBtn = document.getElementById('trainBtn');
 const bar = document.getElementById('bar');
 const trainStatus = document.getElementById('trainStatus');
+const quantStageTitle = document.getElementById('quantStageTitle');
+const quantStageText = document.getElementById('quantStageText');
+const quantCaption = document.getElementById('quantCaption');
+const tuneStageTitle = document.getElementById('tuneStageTitle');
+const tuneStageText = document.getElementById('tuneStageText');
+const quantResult = document.getElementById('quantResult');
 let bits=4, mode='qlora', timer=null;
 
 function renderLayers(){
@@ -317,7 +398,23 @@ function update(){
   document.getElementById('mQLoRA').textContent=total.toFixed(2)+' GB';
   document.getElementById('mTrain').textContent=trainPct.toFixed(2)+'%';
   document.getElementById('mSave').textContent=save.toFixed(0)+'%';
+  updateQuantization();
   renderLayers();
+}
+function updateQuantization(){
+  const precisionNote=bits<=4?'Weights use a compact numeric representation, so the base takes less memory.':bits===8?'Weights keep more detail while using less memory than FP16.':'Weights keep nearly all FP16 detail, so memory savings are smaller.';
+  quantStageTitle.textContent='2. '+bits+'-bit representation';
+  quantStageText.textContent=precisionNote+' The base remains frozen in QLoRA.';
+  quantCaption.textContent=bits+' bits per weight';
+  if(mode==='full'){
+    tuneStageTitle.textContent='3. Full fine-tuning';
+    tuneStageText.textContent='The model is not using the adapter-only path. Gradients update the full-precision base weights.';
+    quantResult.innerHTML='<b>What happens after training?</b> Full fine-tuning can change every base weight. It may adapt strongly, but it requires much more memory for gradients and optimizer states.';
+  }else{
+    tuneStageTitle.textContent='3. QLoRA fine-tuning';
+    tuneStageText.textContent='The '+bits+'-bit base produces activations, but gradients update only the small green LoRA adapter.';
+    quantResult.innerHTML='<b>What happens after training?</b> The original knowledge remains in the quantized base. The adapter adds the new task behavior and can be saved or swapped independently.';
+  }
 }
 size.oninput=update; rank.oninput=update;
 
