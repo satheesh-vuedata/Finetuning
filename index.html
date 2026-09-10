@@ -58,6 +58,16 @@
   .a-layer{height:25px;background:#9ee0bb;border-radius:6px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#145d3d}
   .a-layer.glow{animation:pulse .9s infinite alternate}
   @keyframes pulse{to{transform:scale(1.04);box-shadow:0 0 18px rgba(54,190,126,.45)}}
+  .stage.training .flow{border-color:#72c99a;box-shadow:inset 0 0 0 2px rgba(82,190,132,.12),0 0 24px rgba(82,190,132,.18)}
+  .stage.training .adapter{animation:adapterLift 1.1s ease-in-out infinite alternate}
+  .stage.training .model.quantized{animation:basePulse 1.4s ease-in-out infinite alternate}
+  .stage.training .layer.frozen{animation:signalSweep 1.2s ease-in-out infinite alternate}
+  .stage.training .layer.frozen:nth-child(even){animation-delay:.18s}
+  .stage.training .arrow{color:#3daf78;text-shadow:0 0 10px rgba(61,175,120,.5)}
+  .stage.complete .adapter{box-shadow:0 0 0 3px rgba(54,190,126,.12),0 0 25px rgba(54,190,126,.25)}
+  @keyframes adapterLift{to{transform:translateY(-4px);box-shadow:0 0 25px rgba(54,190,126,.45)}}
+  @keyframes basePulse{to{box-shadow:0 0 0 5px rgba(82,100,183,.1),0 0 24px rgba(82,100,183,.3)}}
+  @keyframes signalSweep{to{background:#c6d0ff;border-color:#8798ed;color:#263a86;transform:translateX(2px)}}
   .quant-note{
     text-align:center;margin-top:20px;font-size:13px;color:#667085
   }
@@ -91,7 +101,9 @@
   .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
   .gray{background:#d9dde6}.blue{background:#b9c5ff}.green{background:#9ee0bb}
   .progress{height:8px;background:#e8ebf2;border-radius:8px;overflow:hidden;margin-top:10px}
-  .bar{height:100%;width:0;background:#5264b7;transition:.2s}
+  .bar{height:100%;width:0;background:linear-gradient(90deg,#4f63bd,#50bd88);transition:.2s;position:relative}
+  .bar::after{content:"";position:absolute;inset:0;width:35%;background:rgba(255,255,255,.45);animation:progressShine 1s linear infinite}
+  @keyframes progressShine{from{transform:translateX(-120%)}to{transform:translateX(320%)}}
   .train-status{font-size:12px;color:#59657a;margin-top:8px;min-height:17px}
   @media(max-width:1000px){.layout{grid-template-columns:1fr}.controls{position:static}.metrics{grid-template-columns:1fr 1fr}}
   @media(max-width:650px){.app{padding:18px 14px}.top{display:block}.badge{display:inline-block;margin-top:14px}.model-row{gap:7px;min-width:470px}.model{width:140px}.adapter{width:110px}.arrow{font-size:22px}.metrics{grid-template-columns:1fr}.flow{padding:14px;overflow-x:auto}.neural-head{display:block}.neural-head .status{display:inline-block;margin-top:10px}.neural-flow{grid-template-columns:1fr;gap:10px}.nf-arrow{transform:rotate(90deg)}}
@@ -488,6 +500,7 @@ const paramPrecision = document.getElementById('paramPrecision');
 const peftStatus = document.getElementById('peftStatus');
 const peftButton = document.getElementById('peftBtn');
 const peftNodes = [...document.querySelectorAll('.path-node')];
+const stage = document.querySelector('.stage');
 let bits=4, mode='qlora', timer=null, peftTimer=null;
 
 function renderLayers(){
@@ -594,6 +607,8 @@ function startTraining(){
   clearInterval(timer); let p=0;
   mode='qlora'; document.getElementById('qloraBtn').click();
   animatePeft();
+  stage.classList.remove('complete');
+  stage.classList.add('training');
   trainBtn.textContent='⏸ Training...'; status.textContent='Adapter training in progress';
   stageTitle.textContent='Step 4 — Train the LoRA Adapter';
   lessonTitle.textContent='Watch the tiny adapter learn'; lessonText.textContent='The large base model stays frozen. Only the small green LoRA layers receive updates.';
@@ -605,6 +620,8 @@ function startTraining(){
     trainStatus.textContent=`Updating adapter parameters… ${p}% complete • ${trainable}% of base parameters trainable`;
     if(p>=100){
       clearInterval(timer); trainBtn.textContent='✓ Training Complete';
+      stage.classList.remove('training');
+      stage.classList.add('complete');
       status.textContent='Adapter trained'; stageTitle.textContent='Step 5 — Base + Trained Adapter';
       lessonTitle.textContent='Result: efficient adaptation'; lessonText.textContent='The base model remains intact while the trained LoRA adapter carries the task/domain-specific changes.';
       trainStatus.textContent='Done — the adapter learned without updating the full base model.';
@@ -615,6 +632,7 @@ function startTraining(){
 trainBtn.onclick=()=>startTraining();
 document.getElementById('resetBtn').onclick=()=>{
   clearInterval(timer); bar.style.width='0%'; trainBtn.textContent='▶ Start Training Animation';
+  stage.classList.remove('training','complete');
   trainStatus.textContent='Ready — click Start Training.';
   stageTitle.textContent='Step 1 — Start with the Base Model'; status.textContent='Base model loaded';
   lessonTitle.textContent='What is happening?'; lessonText.textContent='The base model contains the original knowledge. During a forward pass, neurons still activate and produce hidden representations; QLoRA simply avoids updating the frozen base weights.';
