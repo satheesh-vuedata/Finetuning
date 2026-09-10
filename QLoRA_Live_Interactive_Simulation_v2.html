@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QLoRA — Live Interactive Simulation</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;
+    background:#f5f7fb;color:#14213d;min-height:100vh;
+  }
+  .app{max-width:1400px;margin:auto;padding:28px}
+  .top{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+    margin-bottom:22px
+  }
+  h1{font-size:38px;margin:0 0 6px;font-weight:800;letter-spacing:-1px}
+  .subtitle{font-size:16px;color:#667085;max-width:760px;line-height:1.5}
+  .badge{background:#5264b7;color:white;padding:10px 18px;border-radius:22px;font-weight:700;font-size:13px}
+  .layout{display:grid;grid-template-columns:1fr 330px;gap:20px}
+  .card{
+    background:white;border:1px solid #e4e8f0;border-radius:18px;
+    box-shadow:0 8px 28px rgba(24,39,75,.06)
+  }
+  .stage{padding:22px}
+  .stage-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+  .stage-head h2{margin:0;font-size:20px}
+  .status{font-size:12px;font-weight:700;padding:7px 11px;border-radius:10px;background:#eef2ff;color:#4053a5}
+  .flow{
+    min-height:510px;border-radius:16px;background:#fbfcff;border:1px solid #edf0f6;
+    padding:24px;position:relative;overflow:hidden
+  }
+  .model-row{display:flex;align-items:center;gap:18px;justify-content:center;margin-top:12px}
+  .model{
+    width:180px;min-height:330px;border-radius:16px;padding:14px;
+    border:2px solid #b8c1df;background:#f7f8ff;transition:.35s
+  }
+  .model.quantized{border-color:#8c98d1;background:#f0f2ff}
+  .model-title{text-align:center;font-weight:800;margin-bottom:10px}
+  .layers{display:flex;flex-direction:column;gap:7px}
+  .layer{
+    height:28px;border-radius:7px;background:#dfe4ef;border:1px solid #cbd2df;
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
+    color:#5c6678;transition:.35s
+  }
+  .layer.frozen{background:#d9dde6;color:#707887}
+  .layer.active{background:#b9c5ff;border-color:#7889df;color:#253678}
+  .layer.trained{background:#d8f4e6;border-color:#68bf92;color:#14613b}
+  .arrow{font-size:32px;color:#8390b5;font-weight:800}
+  .adapter{
+    width:145px;min-height:190px;border-radius:16px;border:2px dashed #4dbe86;
+    background:#edfff5;padding:14px;transition:.35s
+  }
+  .adapter-title{text-align:center;font-weight:800;color:#176b45;margin-bottom:12px}
+  .adapter-stack{display:flex;flex-direction:column;gap:8px}
+  .a-layer{height:25px;background:#9ee0bb;border-radius:6px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#145d3d}
+  .a-layer.glow{animation:pulse .9s infinite alternate}
+  @keyframes pulse{to{transform:scale(1.04);box-shadow:0 0 18px rgba(54,190,126,.45)}}
+  .quant-note{
+    text-align:center;margin-top:20px;font-size:13px;color:#667085
+  }
+  .quant-note strong{color:#3e4fa0}
+  .controls{padding:20px}
+  .controls h2{margin:0 0 16px;font-size:19px}
+  .control{margin-bottom:19px}
+  .control-line{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:7px}
+  input[type=range]{width:100%;accent-color:#5264b7}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  button{
+    border:1px solid #d6dbea;background:#fff;border-radius:10px;padding:10px 8px;
+    cursor:pointer;font-weight:700;color:#4d5870
+  }
+  button.selected{background:#5264b7;color:white;border-color:#5264b7}
+  .primary{width:100%;background:#172554;color:white;border:0;padding:13px;border-radius:11px;font-size:14px}
+  .secondary{width:100%;margin-top:8px}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+  .metric{padding:14px;background:white;border:1px solid #e4e8f0;border-radius:14px}
+  .metric .k{font-size:11px;color:#7a8497;text-transform:uppercase;font-weight:800;letter-spacing:.5px}
+  .metric .v{font-size:22px;font-weight:800;margin-top:5px}
+  .metric .s{font-size:11px;color:#8a93a3;margin-top:3px}
+  .lesson{
+    margin-top:18px;padding:18px 20px;background:#eef4ff;border:1px solid #d7e2ff;border-radius:15px;
+    display:flex;gap:15px;align-items:flex-start
+  }
+  .lesson-icon{font-size:25px}
+  .lesson b{display:block;margin-bottom:4px}
+  .lesson span{font-size:13px;line-height:1.5;color:#526078}
+  .legend{display:flex;gap:16px;justify-content:center;margin-top:15px;font-size:11px;color:#697386}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .gray{background:#d9dde6}.blue{background:#b9c5ff}.green{background:#9ee0bb}
+  .progress{height:8px;background:#e8ebf2;border-radius:8px;overflow:hidden;margin-top:10px}
+  .bar{height:100%;width:0;background:#5264b7;transition:.2s}
+  .train-status{font-size:12px;color:#59657a;margin-top:8px;min-height:17px}
+  @media(max-width:1000px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}}
+  @media(max-width:650px){.model-row{gap:7px}.model{width:140px}.adapter{width:110px}.arrow{font-size:22px}.metrics{grid-template-columns:1fr}}
+
+  .neural-card{padding:20px;margin-top:18px}
+  .neural-head{display:flex;justify-content:space-between;align-items:center;gap:15px}
+  .neural-head h2{margin:0 0 4px;font-size:20px}
+  .neural-sub{font-size:12px;color:#707b8f}
+  .neural-flow{display:grid;grid-template-columns:1fr 40px 1.35fr 40px 1fr;align-items:center;gap:8px;margin-top:18px}
+  .nf-stage{background:#fbfcff;border:1px solid #e7eaf2;border-radius:14px;padding:14px;min-height:190px}
+  .nf-title{font-size:11px;font-weight:800;color:#69758a;margin-bottom:12px;letter-spacing:.4px}
+  .tokens{display:flex;flex-wrap:wrap;gap:7px}
+  .token{padding:8px 10px;border-radius:8px;background:#eef2ff;border:1px solid #cdd5f3;font-size:12px;font-weight:700;color:#34448e;transition:.25s}
+  .token.hot{background:#d9fff0;border-color:#6fc79c;transform:translateY(-2px);box-shadow:0 5px 12px rgba(72,180,123,.15)}
+  .neuron-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:9px;align-content:center}
+  .neuron{width:22px;height:22px;border-radius:50%;background:#e0e4ed;border:2px solid #c7cdd9;justify-self:center;transition:.15s}
+  .neuron.active{background:#7486dc;border-color:#465ab6;box-shadow:0 0 0 4px rgba(82,100,183,.09),0 0 14px rgba(82,100,183,.45);transform:scale(1.12)}
+  .neuron.super{background:#5ec38e;border-color:#2d9062;box-shadow:0 0 0 4px rgba(61,184,126,.1),0 0 16px rgba(61,184,126,.55)}
+  .nf-arrow{font-size:29px;font-weight:800;color:#8994b2;text-align:center}
+  .output-box{margin-top:30px;padding:18px;border-radius:12px;background:#f3f5fb;border:1px solid #d9deeb;text-align:center;font-size:13px;font-weight:800;color:#44506a}
+  .output-box.live{background:#edfff5;border-color:#8bd0aa;color:#176440}
+  .tiny-note{font-size:10px;color:#8a93a3;margin-top:14px;text-align:center}
+  .activation-bar{margin-top:16px}
+  .activation-label{display:flex;justify-content:space-between;font-size:11px;color:#68748a;margin-bottom:6px}
+  .activation-track{height:10px;background:#e8ebf2;border-radius:10px;overflow:hidden}
+  .activation-fill{height:100%;width:8%;background:#5264b7;border-radius:10px;transition:.15s}
+  .hood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+  .hood-grid>div{background:#f7f9fc;border:1px solid #e9ecf2;border-radius:11px;padding:12px}
+  .hood-grid b{display:block;font-size:12px;margin-bottom:5px}
+  .hood-grid span{font-size:11px;line-height:1.45;color:#677287}
+  .neural-btn{margin-top:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <h1>QLoRA: Make Fine-Tuning Lightweight</h1>
+      <div class="subtitle">
+        A live visual simulation of how QLoRA keeps the <b>base model frozen + quantized</b>
+        and trains only a small <b>LoRA adapter</b>.
+      </div>
+    </div>
+    <div class="badge">LIVE FINE-TUNING SIMULATION</div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="card stage">
+        <div class="stage-head">
+          <h2 id="stageTitle">Step 1 — Start with the Base Model</h2>
+          <div class="status" id="status">Base model loaded</div>
+        </div>
+        <div class="flow">
+          <div class="model-row">
+            <div class="model" id="baseModel">
+              <div class="model-title">BASE MODEL</div>
+              <div class="layers" id="baseLayers"></div>
+              <div style="text-align:center;font-size:10px;color:#70798b;margin-top:9px">Billions of parameters</div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="model quantized" id="qModel">
+              <div class="model-title">4-BIT BASE</div>
+              <div class="layers" id="qLayers"></div>
+              <div style="text-align:center;font-size:10px;color:#5362a2;margin-top:9px">Quantized + frozen</div>
+            </div>
+            <div class="arrow">+</div>
+            <div class="adapter" id="adapter">
+              <div class="adapter-title">LoRA ADAPTER</div>
+              <div class="adapter-stack" id="adapterStack"></div>
+              <div style="text-align:center;font-size:10px;color:#28714d;margin-top:8px">Trainable</div>
+            </div>
+          </div>
+          <div class="quant-note" id="quantNote">
+            <strong>QLoRA idea:</strong> keep the knowledge in the base model, compress it to 4-bit,
+            and learn a tiny adapter instead of updating every base parameter.
+          </div>
+          <div class="legend">
+            <span><i class="dot gray"></i>Frozen</span>
+            <span><i class="dot blue"></i>Quantized / active base</span>
+            <span><i class="dot green"></i>Trainable LoRA</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><div class="k">Base memory</div><div class="v" id="mBase">0 GB</div><div class="s">FP16 weights</div></div>
+        <div class="metric"><div class="k">QLoRA memory</div><div class="v" id="mQLoRA">0 GB</div><div class="s">4-bit + adapter</div></div>
+        <div class="metric"><div class="k">Trainable</div><div class="v" id="mTrain">0%</div><div class="s">of base parameters</div></div>
+        <div class="metric"><div class="k">Memory saved</div><div class="v" id="mSave">0%</div><div class="s">approximation</div></div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-icon">💡</div>
+        <div>
+          <b id="lessonTitle">What is happening?</b>
+          <span id="lessonText">The base model contains the original knowledge. During a forward pass, neurons still activate and produce hidden representations; QLoRA simply avoids updating the frozen base weights.</span>
+        </div>
+      </div>
+    </div>
+
+      <div class="card neural-card">
+        <div class="neural-head">
+          <div>
+            <h2>🧠 What is happening inside the model?</h2>
+            <div class="neural-sub">Live neuron activation: input tokens → hidden states → activated neurons → output</div>
+          </div>
+          <div class="status" id="neuralStatus">Forward pass ready</div>
+        </div>
+        <div class="neural-flow">
+          <div class="nf-stage">
+            <div class="nf-title">1. INPUT TOKENS</div>
+            <div class="tokens" id="tokens"></div>
+          </div>
+          <div class="nf-arrow">→</div>
+          <div class="nf-stage">
+            <div class="nf-title">2. HIDDEN LAYERS</div>
+            <div class="neuron-grid" id="neurons"></div>
+            <div class="tiny-note">Each circle = simplified neuron / activation unit</div>
+          </div>
+          <div class="nf-arrow">→</div>
+          <div class="nf-stage">
+            <div class="nf-title">3. OUTPUT</div>
+            <div class="output-box" id="outputBox">Answer probability</div>
+          </div>
+        </div>
+        <div class="activation-bar">
+          <div class="activation-label"><b>Activation strength</b><span id="activationText">Low → High</span></div>
+          <div class="activation-track"><div class="activation-fill" id="activationFill"></div></div>
+        </div>
+        <div class="hood-grid">
+          <div><b>Forward pass</b><span>Input is transformed through frozen base-model layers. Activations flow through the network to produce an output.</span></div>
+          <div><b>QLoRA training</b><span>The base activations still flow normally, but the weight updates are applied to the small LoRA path rather than the frozen base weights.</span></div>
+          <div><b>Important distinction</b><span>Neurons activate during inference and training. “Frozen” means their underlying base weights are not updated by the optimizer.</span></div>
+        </div>
+        <button class="primary neural-btn" id="forwardBtn">⚡ Run Forward Pass</button>
+      </div>
+
+    <div class="card controls">
+      <h2>🎛️ Control the Simulation</h2>
+
+      <div class="control">
+        <div class="control-line"><span>Model size</span><span id="sizeVal">7B</span></div>
+        <input id="size" type="range" min="1" max="70" value="7">
+      </div>
+
+      <div class="control">
+        <div class="control-line"><span>Quantization</span><span id="bitsVal">4-bit</span></div>
+        <div class="seg" id="bits">
+          <button data-bits="2">2-bit</button>
+          <button data-bits="4" class="selected">4-bit</button>
+          <button data-bits="8">8-bit</button>
+          <button data-bits="16">16-bit</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <div class="control-line"><span>LoRA rank</span><span id="rankVal">16</span></div>
+        <input id="rank" type="range" min="4" max="64" step="4" value="16">
+      </div>
+
+      <div class="control">
+        <div class="control-line"><span>Simulation mode</span><span id="modeVal">QLoRA</span></div>
+        <div class="seg">
+          <button id="qloraBtn" class="selected">QLoRA</button>
+          <button id="fullBtn">Full FT</button>
+        </div>
+      </div>
+
+      <button class="primary" id="trainBtn">▶ Start Training Animation</button>
+      <button class="secondary" id="resetBtn">↻ Reset</button>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="train-status" id="trainStatus">Ready — click Start Training.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const size = document.getElementById('size');
+const rank = document.getElementById('rank');
+const baseLayers = document.getElementById('baseLayers');
+const qLayers = document.getElementById('qLayers');
+const adapterStack = document.getElementById('adapterStack');
+const stageTitle = document.getElementById('stageTitle');
+const status = document.getElementById('status');
+const lessonTitle = document.getElementById('lessonTitle');
+const lessonText = document.getElementById('lessonText');
+const trainBtn = document.getElementById('trainBtn');
+const bar = document.getElementById('bar');
+const trainStatus = document.getElementById('trainStatus');
+let bits=4, mode='qlora', timer=null;
+
+function renderLayers(){
+  baseLayers.innerHTML=''; qLayers.innerHTML=''; adapterStack.innerHTML='';
+  for(let i=0;i<10;i++){
+    const b=document.createElement('div'); b.className='layer '+(mode==='full'?'active':'frozen'); b.textContent='Layer '+(i+1);
+    baseLayers.appendChild(b);
+    const q=document.createElement('div'); q.className='layer '+(mode==='full'?'active':'frozen'); q.textContent='Layer '+(i+1);
+    qLayers.appendChild(q);
+  }
+  const n=Math.max(2,Math.round(rank.value/8));
+  for(let i=0;i<n;i++){
+    const a=document.createElement('div'); a.className='a-layer'; a.textContent='LoRA A/B';
+    adapterStack.appendChild(a);
+  }
+  document.getElementById('adapter').style.display=mode==='full'?'none':'block';
+  document.getElementById('qModel').style.opacity=mode==='full'?'0.45':'1';
+}
+
+function update(){
+  const b=size.value, r=rank.value;
+  document.getElementById('sizeVal').textContent=b+'B';
+  document.getElementById('rankVal').textContent=r;
+  document.getElementById('bitsVal').textContent=bits+'-bit';
+
+  const base=b*2; // approximate FP16 GB
+  const quant=b*bits/8;
+  const adapter=Math.max(.01, b*(r/10000)*2);
+  const total=mode==='full'?base:quant+adapter;
+  const trainPct=mode==='full'?100:(r/10000*100);
+  const save=Math.max(0,(1-total/base)*100);
+
+  document.getElementById('mBase').textContent=base.toFixed(1)+' GB';
+  document.getElementById('mQLoRA').textContent=total.toFixed(2)+' GB';
+  document.getElementById('mTrain').textContent=trainPct.toFixed(2)+'%';
+  document.getElementById('mSave').textContent=save.toFixed(0)+'%';
+  renderLayers();
+}
+size.oninput=update; rank.oninput=update;
+
+document.querySelectorAll('#bits button').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('#bits button').forEach(x=>x.classList.remove('selected'));
+    btn.classList.add('selected'); bits=+btn.dataset.bits; update();
+  }
+});
+document.getElementById('qloraBtn').onclick=()=>{
+  mode='qlora'; document.getElementById('qloraBtn').classList.add('selected'); document.getElementById('fullBtn').classList.remove('selected');
+  stageTitle.textContent='Step 1 — Start with the Base Model'; status.textContent='Base model loaded';
+  lessonTitle.textContent='What is happening?'; lessonText.textContent='The base model contains the original knowledge. QLoRA keeps these weights frozen, stores them in low-bit precision, and trains a small adapter.';
+  update();
+};
+document.getElementById('fullBtn').onclick=()=>{
+  mode='full'; document.getElementById('fullBtn').classList.add('selected'); document.getElementById('qloraBtn').classList.remove('selected');
+  stageTitle.textContent='Step 1 — Full Fine-Tuning'; status.textContent='All weights trainable';
+  lessonTitle.textContent='Why is Full FT expensive?'; lessonText.textContent='Full fine-tuning updates the entire model. The simulation highlights every base layer as trainable and shows the much larger memory footprint.';
+  update();
+};
+function startTraining(){
+  clearInterval(timer); let p=0;
+  mode='qlora'; document.getElementById('qloraBtn').click();
+  trainBtn.textContent='⏸ Training...'; status.textContent='Adapter training in progress';
+  stageTitle.textContent='Step 4 — Train the LoRA Adapter';
+  lessonTitle.textContent='Watch the tiny adapter learn'; lessonText.textContent='The large base model stays frozen. Only the small green LoRA layers receive updates.';
+  const als=[...document.querySelectorAll('.a-layer')];
+  timer=setInterval(()=>{
+    p+=2; bar.style.width=p+'%';
+    als.forEach((a,i)=>{ if(i < Math.ceil((p/100)*als.length)) a.classList.add('glow'); });
+    const trainable=(rank.value/10000*100).toFixed(2);
+    trainStatus.textContent=`Updating adapter parameters… ${p}% complete • ${trainable}% of base parameters trainable`;
+    if(p>=100){
+      clearInterval(timer); trainBtn.textContent='✓ Training Complete';
+      status.textContent='Adapter trained'; stageTitle.textContent='Step 5 — Base + Trained Adapter';
+      lessonTitle.textContent='Result: efficient adaptation'; lessonText.textContent='The base model remains intact while the trained LoRA adapter carries the task/domain-specific changes.';
+      trainStatus.textContent='Done — the adapter learned without updating the full base model.';
+      als.forEach(a=>a.classList.remove('glow')); als.forEach(a=>a.classList.add('trained'));
+    }
+  },80);
+}
+trainBtn.onclick=()=>startTraining();
+document.getElementById('resetBtn').onclick=()=>{
+  clearInterval(timer); bar.style.width='0%'; trainBtn.textContent='▶ Start Training Animation';
+  trainStatus.textContent='Ready — click Start Training.';
+  stageTitle.textContent='Step 1 — Start with the Base Model'; status.textContent='Base model loaded';
+  lessonTitle.textContent='What is happening?'; lessonText.textContent='The base model contains the original knowledge. During a forward pass, neurons still activate and produce hidden representations; QLoRA simply avoids updating the frozen base weights.';
+  update();
+};
+update();
+
+const tokenData = ["What", "is", "the", "main", "cause", "of", "climate", "change", "?"];
+const tokenWrap = document.getElementById('tokens');
+const neuronWrap = document.getElementById('neurons');
+tokenData.forEach(t => {
+  const s=document.createElement('span'); s.className='token'; s.textContent=t; tokenWrap.appendChild(s);
+});
+for(let i=0;i<40;i++){
+  const n=document.createElement('div'); n.className='neuron'; n.dataset.i=i; neuronWrap.appendChild(n);
+}
+function runForward(){
+  const toks=[...document.querySelectorAll('.token')];
+  const ns=[...document.querySelectorAll('.neuron')];
+  const fill=document.getElementById('activationFill');
+  const out=document.getElementById('outputBox');
+  const st=document.getElementById('neuralStatus');
+  ns.forEach(n=>n.className='neuron'); toks.forEach(t=>t.classList.remove('hot'));
+  out.className='output-box'; out.textContent='Processing…'; st.textContent='Forward pass running';
+  let p=0;
+  const timer=setInterval(()=>{
+    p++;
+    toks.forEach((t,i)=>{ if(i < Math.ceil(p/toks.length*toks.length)) t.classList.add('hot'); });
+    ns.forEach((n,i)=>{
+      const threshold=(p%8)*5;
+      if(((i*7 + p*11) % 100) > 58-threshold) n.classList.add('active');
+      if(p>72 && i%9===0) { n.classList.remove('active'); n.classList.add('super'); }
+    });
+    fill.style.width=Math.min(100,p)+'%';
+    if(p>=100){
+      clearInterval(timer);
+      st.textContent='Forward pass complete';
+      out.className='output-box live';
+      out.textContent='“Rising global temperatures”  •  high activation path';
+      document.getElementById('activationText').textContent='Strong activations selected';
+    }
+  },35);
+}
+document.getElementById('forwardBtn').onclick=runForward;
+
+</script>
+</body>
+</html>
