@@ -152,6 +152,25 @@
   .quant-arrow{font-size:25px;text-align:center;color:#a89169;font-weight:800}
   .quant-result{margin-top:15px;padding:12px 14px;border-radius:10px;background:#fff7e3;border:1px solid #f0d898;font-size:12px;line-height:1.5;color:#765c26}
   @media(max-width:650px){.quant-flow{grid-template-columns:1fr;gap:5px}.quant-arrow{transform:rotate(90deg)}}
+  .peft-card{padding:22px;margin-top:18px;background:#f9fbff;border-color:#dfe6f5}
+  .peft-card h2{margin:0 0 5px;font-size:20px}
+  .peft-intro{margin:0;color:#68748a;font-size:13px;line-height:1.55}
+  .peft-layout{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:18px}
+  .peft-definition,.peft-animation{padding:16px;border:1px solid #e1e7f3;border-radius:13px;background:white}
+  .peft-definition h3,.peft-animation h3{font-size:13px;margin:0 0 8px}
+  .peft-definition p{font-size:11px;line-height:1.5;color:#68748a;margin:0}
+  .peft-list{display:grid;gap:8px;margin-top:13px}
+  .peft-item{display:grid;grid-template-columns:28px 1fr;gap:9px;align-items:start}
+  .peft-icon{width:26px;height:26px;display:grid;place-items:center;border-radius:8px;background:#eaf0ff;color:#4359b1;font-size:12px;font-weight:800}
+  .peft-item b{font-size:11px;color:#273554}.peft-item span{display:block;font-size:10px;color:#68748a;line-height:1.4;margin-top:2px}
+  .peft-path{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:22px;min-height:82px}
+  .path-node{padding:10px 8px;border-radius:9px;background:#e9edf5;color:#657087;font-size:10px;font-weight:800;text-align:center;border:1px solid #d5dbe7;transition:.2s}
+  .path-node.adapter-node{background:#e4faee;border-color:#83cba2;color:#176440}
+  .path-node.active{transform:translateY(-5px);box-shadow:0 7px 16px rgba(72,180,123,.2);border-color:#42ae78}
+  .path-arrow{color:#8c98b3;font-weight:800}
+  .peft-status{min-height:32px;margin-top:14px;padding:9px 10px;border-radius:8px;background:#f4f6fb;color:#68748a;font-size:11px;line-height:1.4}
+  .peft-button{width:100%;margin-top:10px}
+  @media(max-width:850px){.peft-layout{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -246,6 +265,32 @@
           </div>
         </div>
         <div class="quant-result" id="quantResult"><b>What happens after training?</b> The original knowledge remains in the quantized base. The adapter adds the new task behavior and can be saved or swapped independently.</div>
+      </div>
+      <div class="card peft-card">
+        <h2>What are LoRA and PEFT?</h2>
+        <p class="peft-intro"><b>PEFT</b> means Parameter-Efficient Fine-Tuning: adapt a large pretrained model by updating only a small, chosen set of parameters. <b>LoRA</b> is one popular PEFT method that learns a low-rank update beside the frozen base model.</p>
+        <div class="peft-layout">
+          <div class="peft-definition">
+            <h3>What you need for a LoRA fine-tune</h3>
+            <div class="peft-list">
+              <div class="peft-item"><div class="peft-icon">01</div><div><b>Pretrained base model</b><span>The original model supplies general knowledge and is loaded in frozen form.</span></div></div>
+              <div class="peft-item"><div class="peft-icon">02</div><div><b>Task dataset</b><span>Examples show the behavior or domain you want the adapted model to learn.</span></div></div>
+              <div class="peft-item"><div class="peft-icon">03</div><div><b>LoRA rank and target layers</b><span>Rank controls adapter size; target layers decide where the low-rank update is inserted.</span></div></div>
+              <div class="peft-item"><div class="peft-icon">04</div><div><b>Training setup</b><span>A tokenizer, learning rate, optimizer, and enough GPU memory are still required.</span></div></div>
+            </div>
+          </div>
+          <div class="peft-animation">
+            <h3>How the LoRA update flows</h3>
+            <div class="peft-path" id="peftPath">
+              <div class="path-node" data-path="input">Input</div><div class="path-arrow">→</div>
+              <div class="path-node" data-path="base">Frozen base</div><div class="path-arrow">+</div>
+              <div class="path-node adapter-node" data-path="a">LoRA A</div><div class="path-arrow">→</div>
+              <div class="path-node adapter-node" data-path="b">LoRA B</div>
+            </div>
+            <div class="peft-status" id="peftStatus">The base path keeps its knowledge. The green A/B path learns a small task-specific correction.</div>
+            <button class="secondary peft-button" id="peftBtn">▶ Animate LoRA Update</button>
+          </div>
+        </div>
       </div>
       <div class="card neural-card">
         <div class="neural-head">
@@ -362,7 +407,10 @@ const quantCaption = document.getElementById('quantCaption');
 const tuneStageTitle = document.getElementById('tuneStageTitle');
 const tuneStageText = document.getElementById('tuneStageText');
 const quantResult = document.getElementById('quantResult');
-let bits=4, mode='qlora', timer=null;
+const peftStatus = document.getElementById('peftStatus');
+const peftButton = document.getElementById('peftBtn');
+const peftNodes = [...document.querySelectorAll('.path-node')];
+let bits=4, mode='qlora', timer=null, peftTimer=null;
 
 function renderLayers(){
   baseLayers.innerHTML=''; qLayers.innerHTML=''; adapterStack.innerHTML='';
@@ -416,6 +464,32 @@ function updateQuantization(){
     quantResult.innerHTML='<b>What happens after training?</b> The original knowledge remains in the quantized base. The adapter adds the new task behavior and can be saved or swapped independently.';
   }
 }
+function animatePeft(){
+  clearInterval(peftTimer);
+  peftNodes.forEach(node=>node.classList.remove('active'));
+  peftButton.disabled=true;
+  peftButton.textContent='⏳ LoRA path running...';
+  const sequence=[
+    ['input','The input is sent through the model.'],
+    ['base','The frozen base produces its normal representation.'],
+    ['a','LoRA A compresses the representation into a small update.'],
+    ['b','LoRA B expands that update back into the model dimension.']
+  ];
+  let step=0;
+  peftTimer=setInterval(()=>{
+    const [path,message]=sequence[step];
+    peftNodes.forEach(node=>node.classList.toggle('active',node.dataset.path===path));
+    peftStatus.textContent=message;
+    step++;
+    if(step>=sequence.length){
+      clearInterval(peftTimer);
+      peftNodes.forEach(node=>node.classList.toggle('active',node.dataset.path==='a'||node.dataset.path==='b'));
+      peftStatus.textContent='LoRA A + B create the task-specific update. Only these small adapter weights receive optimizer updates.';
+      peftButton.disabled=false;
+      peftButton.textContent='↻ Replay LoRA Update';
+    }
+  },650);
+}
 size.oninput=update; rank.oninput=update;
 
 document.querySelectorAll('#bits button').forEach(btn=>{
@@ -439,6 +513,7 @@ document.getElementById('fullBtn').onclick=()=>{
 function startTraining(){
   clearInterval(timer); let p=0;
   mode='qlora'; document.getElementById('qloraBtn').click();
+  animatePeft();
   trainBtn.textContent='⏸ Training...'; status.textContent='Adapter training in progress';
   stageTitle.textContent='Step 4 — Train the LoRA Adapter';
   lessonTitle.textContent='Watch the tiny adapter learn'; lessonText.textContent='The large base model stays frozen. Only the small green LoRA layers receive updates.';
@@ -504,6 +579,7 @@ function runForward(){
   },35);
 }
 document.getElementById('forwardBtn').onclick=runForward;
+peftButton.onclick=animatePeft;
 
 </script>
 </body>
