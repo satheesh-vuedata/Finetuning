@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perchat</title>
+  </head>
+  <body>
+    <script
+      id="perchat-chatbot-script"
+      data-integration-key="pcik-7f205bd8-6bec-4a47-bcba-416f3cf4a7cb"
+      data-mode=""
+      data-meta='{"userId": "user_001", "email": ""}'
+      async
+    >
+      (function () {
+        (window.perchat && window.perchat.getState?.() === 'initialized') ||
+          ((window.perchat = function (...e) {
+            (window.perchat.q = window.perchat.q || []),
+              window.perchat.q.push(e);
+          }),
+          (window.perchat.q = window.perchat.q || []));
+        const e = () => {
+          const t =
+              document.querySelector('script[id="perchat-chatbot-script"]') ||
+              document.currentScript,
+            a = t?.getAttribute('data-integration-key') || null,
+            n = t?.getAttribute('data-mode') || null;
+          let r = {};
+          try {
+            const e = t?.getAttribute('data-meta') || null;
+            e && (r = JSON.parse(e));
+          } catch {}
+          if (!a) return;
+          (window.perchatIntegrationKey = a),
+            (window.perchatMeta = r),
+            (window.perchatMode = n);
+          const c = document.createElement('div');
+          (c.id = 'perchat-chatbot'),
+            c.classList.add('perchat-styles'),
+            document.body.appendChild(c);
+          const d = document.createElement('script');
+          (d.src = 'https://chat.perchat.ai/chatui.bundle.min.js'),
+            (d.async = !0),
+            (d.id = 'perchat-chatbot-bundle'),
+            (d.onerror = () => {}),
+            (d.onload = () => {
+              window.perchat.init
+                ? window.perchat.init({ integrationKey: a, meta: r, mode: n })
+                : window.perchat('init', {
+                    integrationKey: a,
+                    meta: r,
+                    mode: n,
+                  });
+            }),
+            document.body.appendChild(d);
+        };
+        'complete' === document.readyState
+          ? e()
+          : window.addEventListener('load', e);
+      })();
+    </script>
+  </body>
+</html>
